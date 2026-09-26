@@ -2,6 +2,7 @@
 #   Raytracer/CLAUDE.md            "@main/CLAUDE.md"
 #   Raytracer/.claude/agents       junction -> <Source>/.claude/agents
 #   Raytracer/.claude/skills       junction -> <Source>/.claude/skills
+#   Raytracer/.claude/hooks        junction -> <Source>/.claude/hooks
 #   Raytracer/.cache/fetchcontent  shared FetchContent sources
 # Usage: main/scripts/setup-workspace.ps1 [-Source main]
 #   -Source  checkout the junctions point to (e.g. M0 while agents are not merged yet).
@@ -15,7 +16,7 @@ if (-not (Test-Path (Join-Path $sourceDir '.git'))) { throw "No checkout at $sou
 Set-Content -NoNewline -Path (Join-Path $root 'CLAUDE.md') -Value "@main/CLAUDE.md`n"
 New-Item -ItemType Directory -Force (Join-Path $root '.claude'), (Join-Path $root '.cache/fetchcontent') | Out-Null
 
-foreach ($name in 'agents', 'skills') {
+foreach ($name in 'agents', 'skills', 'hooks') {
     $link = Join-Path $root ".claude/$name"
     $target = Join-Path $sourceDir ".claude/$name"
     New-Item -ItemType Directory -Force $target | Out-Null
