@@ -1,0 +1,7 @@
+---
+InheritParentConfig: true
+# Catch2 macros expand to constructs these checks cannot see through.
+Checks: >
+  -cppcoreguidelines-avoid-do-while,
+  -readability-function-cognitive-complexity
+...
