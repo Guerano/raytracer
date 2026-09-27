@@ -46,15 +46,38 @@ $cases = @(
     @('reviewer', 'Write', @{ file_path = "$worktree/review.md" }, 2)
 )
 
+# Callers the guard must leave alone: the main session (no agent_type) and other agents.
+$cases += , @('', 'Read', @{ file_path = "$worktree/src/Version.cpp" }, 0)
+$cases += , @('', 'Bash', @{ command = 'git push origin feature/M1' }, 0)
+$cases += , @('Explore', 'Read', @{ file_path = "$worktree/src/Version.cpp" }, 0)
+
 $failures = 0
 foreach ($case in $cases) {
     $role, $tool, $toolInput, $expected = $case
-    $payload = @{ tool_name = $tool; tool_input = $toolInput; cwd = $root } | ConvertTo-Json -Compress
-    $stderr = $payload | pwsh -NoProfile -File $guard -Role $role 2>&1
+    # The role travels in agent_type, as in real subagent payloads.
+    $fields = @{ tool_name = $tool; tool_input = $toolInput; cwd = $root }
+    if ($role) { $fields.agent_type = $role; $fields.agent_id = 'test' }
+    $stderr = $fields | ConvertTo-Json -Compress | pwsh -NoProfile -File $guard 2>&1
     if ($LASTEXITCODE -ne $expected) {
         $failures++
         Write-Host "FAIL [$role] $tool $($toolInput | ConvertTo-Json -Compress): got $LASTEXITCODE, want $expected $stderr"
     }
 }
-Write-Host "$($cases.Count - $failures)/$($cases.Count) passed"
+
+# Unreadable payloads: fail closed for our agents, stay open for the main session.
+$rawCases = @(
+    @('{"agent_type":"test-writer","tool_name":"Read","tool_input":{"file_path":"C:\Users\x"}}', 2),
+    @('{"tool_name":"Read","tool_input":{"file_path":"C:\Users\x"}}', 0)
+)
+foreach ($rawCase in $rawCases) {
+    $raw, $expected = $rawCase
+    $raw | pwsh -NoProfile -File $guard 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne $expected) {
+        $failures++
+        Write-Host "FAIL raw payload ${raw}: got $LASTEXITCODE, want $expected"
+    }
+}
+$total = $cases.Count + $rawCases.Count
+
+Write-Host "$($total - $failures)/$total passed"
 exit [int]($failures -gt 0)

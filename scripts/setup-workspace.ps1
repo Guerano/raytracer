@@ -3,6 +3,8 @@
 #   Raytracer/.claude/agents       junction -> <Source>/.claude/agents
 #   Raytracer/.claude/skills       junction -> <Source>/.claude/skills
 #   Raytracer/.claude/hooks        junction -> <Source>/.claude/hooks
+#   Raytracer/.claude/settings.json  copy of <Source>/.claude/settings.json (hook registration);
+#                                    re-run this script after changing it
 #   Raytracer/.cache/fetchcontent  shared FetchContent sources
 # Usage: main/scripts/setup-workspace.ps1 [-Source main]
 #   -Source  checkout the junctions point to (e.g. M0 while agents are not merged yet).
@@ -29,6 +31,10 @@ foreach ($name in 'agents', 'skills', 'hooks') {
     New-Item -ItemType Junction -Path $link -Target $target | Out-Null
     Write-Host "$link -> $target"
 }
+
+# A file cannot be a junction, and a symlink needs Developer Mode: copy instead.
+Copy-Item -Force (Join-Path $sourceDir '.claude/settings.json') (Join-Path $root '.claude/settings.json')
+Write-Host "$(Join-Path $root '.claude/settings.json') <- copy of $Source"
 
 $localSettings = Join-Path $root '.claude/settings.local.json'
 if (-not (Test-Path $localSettings)) { Set-Content -Path $localSettings -Value "{}`n" }

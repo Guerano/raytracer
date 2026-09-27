@@ -1,10 +1,26 @@
-# PreToolUse guard shared by the project subagents. Reads the hook payload on stdin and exits 2
-# (blocking the call, reason on stderr) when the tool call breaks the role's path ownership.
+# PreToolUse guard for the project subagents. Reads the hook payload on stdin and exits 2
+# (blocking the call, reason on stderr) when the tool call breaks the calling agent's rules.
 # Heuristic defense in depth: the agent prompts state the same rules.
-# Usage (agent frontmatter): pwsh -NoProfile -File <this> -Role test-writer|developer|reviewer
-param([Parameter(Mandatory)][ValidateSet('test-writer', 'developer', 'reviewer')][string]$Role)
+#
+# Registered once in the workspace settings (.claude/settings.json), not in agent frontmatter:
+# frontmatter hooks never fire on Windows (anthropics/claude-code#95650). The role comes from the
+# payload's agent_type; calls from the main session or other agents are always allowed.
+# -Role overrides agent_type (used by agent-guard.tests.ps1).
+param([string]$Role)
 
-$payload = [Console]::In.ReadToEnd() | ConvertFrom-Json
+$roles = 'test-writer', 'developer', 'reviewer'
+$raw = [Console]::In.ReadToEnd()
+if (-not $Role -and $raw -match '"agent_type"\s*:\s*"([^"]+)"') { $Role = $Matches[1] }
+if ($Role -notin $roles) { exit 0 }
+
+# Fail closed for our agents: any unexpected error (unreadable payload, bug) blocks the call.
+$ErrorActionPreference = 'Stop'
+trap {
+    [Console]::Error.WriteLine("Blocked by agent-guard ($Role): guard failed, call denied: $_")
+    exit 2
+}
+
+$payload = $raw | ConvertFrom-Json
 $tool = $payload.tool_name
 $toolInput = $payload.tool_input
 
