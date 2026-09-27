@@ -28,7 +28,7 @@ C++20 raytracer, loosely inspired by *Ray Tracing in One Weekend* (not a strict 
 | M6 | Multithreading: tile rendering, deterministic per-pixel RNG, benchmark |
 | M7 | Non-regression: reference images + RMSE tolerance in CI |
 
-One milestone = one session = one PR. One milestone active at a time.
+One milestone = one spec session + one implementation session = one PR. One milestone active at a time.
 
 - Numeric type: `double`. Errors: exceptions.
 - Dependencies: Catch2 v3, nlohmann/json (FetchContent, shared cache), stb_image_write (PNG).
@@ -68,7 +68,7 @@ Raytracer/                 not versioned — Claude session runs here
 │  ├─ skills -> main/.claude/skills   (junction)
 │  └─ settings.local.json
 ├─ .cache/fetchcontent/    shared FetchContent cache
-├─ plan/                   orphan branch `plan` (this file)
+├─ plan/                   orphan branch `plan` (this file, specs/Mx.md)
 ├─ main/                   always on `main`
 └─ Mx/                     worktree on feature/Mx — the single worktree of the active milestone
 ```
@@ -98,25 +98,47 @@ Defined in `main/.claude/agents/`, versioned. Agent changes go through a PR.
 
 | Agent | Model | Writes | Rules |
 |---|---|---|---|
-| test-writer | Haiku | `tests/` | Must not read `src/` or `app/` (PreToolUse hook in its frontmatter + prompt). Tests must compile against headers. |
-| developer | Sonnet | `src/`, `app/` | May read tests, never modifies them nor `include/rt` — escalates instead. |
-| reviewer | Sonnet | nothing (read-only) | Reviews `main...feature/Mx` against the issue and CLAUDE.md. |
+| test-writer | Haiku | `tests/` | Must not read `src/` or `app/`. Chooses test cases itself from the headers' doc comments and the spec, walking a scenario grid (nominal, degenerate, boundaries, errors, numeric, determinism). Reports a coverage map. Done = tests compile (link errors / red expected). |
+| developer | Sonnet | `src/`, `app/` | Never modifies tests nor `include/rt`. On a doubtful test or header: keeps going on the rest, escalates at the end. Lists what it noticed but did not touch. Done = tests green + lint clean. |
+| reviewer | Sonnet | nothing (read-only) | Reviews `main...feature/Mx` against spec + issue + CLAUDE.md, tests first; axes: spec, correctness, tests, architecture, performance, ownership, style + presumptive-blocker checklist. May run build/tests. Returns findings as JSON for inline PR comments. |
 
-- test-writer and developer commit their own paths in the milestone worktree; on `index.lock` failure, wait 5 s and retry.
-- No agent ever pushes. The orchestrator (main session) pushes, opens PRs, updates the board.
+- All three carry a PreToolUse hook (`.claude/hooks/agent-guard.ps1 -Role <agent>`, table-tested by
+  `agent-guard.tests.ps1`): path ownership per role, and git/GitHub read-only for every agent.
+- Agents never commit. The orchestrator reviews each agent's diff, commits, pushes, opens PRs,
+  updates the board. Traceability: an agent's work is committed with the agent as git author
+  (`--author "developer (Sonnet) <developer@agents.raytracer>"`); the committer stays the user.
 - Max 3 subagents in flight.
-- Per-agent hook support must be verified in M0.
+- Verified in M0: per-agent frontmatter hooks are supported; agents are discovered through the
+  `.claude/agents` junction (after a session restart).
 
-## Milestone workflow (`/milestone Mx`)
+## Milestone workflow
 
-1. User + orchestrator define the `include/rt` headers; orchestrator commits them in `Mx/` (branch `feature/Mx`).
-2. test-writer writes tests (compile, red or unlinked) and commits. — strict TDD
-3. developer makes them green and commits.
-4. Orchestrator runs ctest, pushes, opens a **draft** PR; reviewer report posted as a PR comment.
-5. Fix loop: responsible agent resumed with its context, **max 2 rounds**, then escalate to user.
-   If developer thinks a test is wrong, it escalates; test-writer fixes it.
-6. PR marked ready → **human review by the user**, who merges.
+0. **Spec session (separate, before the milestone)**: grilling with the user (`/grilling`), then the
+   orchestrator writes `plan/specs/Mx.md` and pushes it. Sections: Goal, Behaviours, Acceptance
+   criteria, **Out of scope** (explicit list, used by the reviewer), Open questions.
+1. `/milestone Mx` in a fresh session. User + orchestrator derive the `include/rt` headers from the
+   spec; orchestrator commits them in `Mx/` (branch `feature/Mx`).
+2. test-writer writes tests (compile, red or unlinked) and a coverage map; orchestrator reviews the
+   diff and commits. — strict TDD
+3. developer makes them green, lists what it noticed but did not touch; orchestrator verifies
+   tests + lint, reviews the diff and commits.
+4. Orchestrator pushes, opens a **draft** PR (body: Changes / Not touched / Points of attention).
+   The reviewer gets only diff + spec + issue (never the agents' reports). Orchestrator triages
+   findings (valid / trade-off / contract misread / noise) and posts one PR review with inline comments.
+5. Fix loop on every **valid** finding: owning agent resumed with its context, **max 2 rounds**,
+   then escalate to user. Implementation defects follow **Prove-It**: test-writer first writes a
+   failing test from the defect scenario, then developer fixes. If developer thinks a test is
+   wrong, it escalates; test-writer fixes it.
+6. PR marked ready → **human review by the user**, who merges. No intermediate human checkpoint
+   (conscious deviation from agent-skills' "sequential orchestrator" anti-pattern: agents read
+   files themselves, so hand-offs do not paraphrase; the contract is fixed before delegation).
 7. Remove the `Mx/` worktree and branch, `git pull` in `main/`, update the board.
+
+Every session (spec or milestone) ends by overwriting `plan/HANDOFF.md` (milestone and step,
+decisions, next action, verification commands, open risks) and pushing it.
+
+Several ideas above come from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)
+(code-reviewer, test-engineer, doubt-driven-development, incremental-implementation).
 
 ## M0 specifics
 
