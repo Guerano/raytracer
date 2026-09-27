@@ -17,7 +17,7 @@ jobs:
     name: Windows MSVC
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ilammy/msvc-dev-cmd@v1
       - run: cmake --preset windows-msvc-debug
       - run: cmake --build --preset windows-msvc-debug
@@ -31,7 +31,7 @@ jobs:
       matrix:
         compiler: [gcc, clang]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: sudo apt-get update && sudo apt-get install -y ninja-build
       - run: cmake --preset linux-${{ matrix.compiler }}-debug
       - run: cmake --build --preset linux-${{ matrix.compiler }}-debug
@@ -41,7 +41,7 @@ jobs:
     name: Lint (clang-format, clang-tidy)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: sudo apt-get update && sudo apt-get install -y ninja-build clang-19 clang-format-19 clang-tidy-19
       - run: cmake --preset linux-clang-debug -DCMAKE_CXX_COMPILER=clang++-19
       - run: scripts/lint.sh build/linux-clang-debug
