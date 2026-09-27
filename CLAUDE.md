@@ -10,6 +10,9 @@ The Claude session runs in the parent directory `Raytracer/`, not in this reposi
 - `main/` — always on `main`, never edited directly.
 - `Mx/` — worktree on `feature/Mx`, the single active milestone. All work happens there.
 - `plan/` — orphan branch `plan`; commit and push directly (`docs(plan): ...`).
+  `plan/specs/Mx.md` is the milestone spec, written in a grilling session before `/milestone Mx`.
+  `plan/HANDOFF.md` is the resume point: read it first, overwrite and push it at the end of every
+  session.
 - `.cache/fetchcontent/` — shared FetchContent cache.
 
 `scripts/setup-workspace.ps1` recreates the top-level files and junctions.
@@ -50,4 +53,7 @@ An agent never edits outside its paths; it escalates instead.
 
 - Conventional Commits in English, referencing the sub-issue: `feat(math): add Vec3 (#12)`.
 - One milestone = one branch `feature/Mx` = one PR. Merge commits, no squash. Only the user merges.
-- Agents commit their own paths but never push; the orchestrator pushes and opens PRs.
+- Git and GitHub are read-only for agents (enforced by `.claude/hooks/agent-guard.ps1`): the
+  orchestrator reviews each agent's diff, commits, pushes and publishes.
+- An agent's work is committed with the agent as author:
+  `--author "test-writer (Haiku) <test-writer@agents.raytracer>"`.

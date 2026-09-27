@@ -1,0 +1,30 @@
+---
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
+IndentWidth: 4
+ColumnLimit: 100
+AccessModifierOffset: -4
+BreakBeforeBraces: Attach
+PointerAlignment: Left
+ReferenceAlignment: Left
+QualifierAlignment: Left
+NamespaceIndentation: None
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+InsertNewlineAtEOF: true
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # Project headers
+  - Regex: '^("|<rt/)'
+    Priority: 1
+  # Standard library: no extension, no directory
+  - Regex: '^<[a-z_]+>$'
+    Priority: 3
+  # Third-party
+  - Regex: '.*'
+    Priority: 2
+...
