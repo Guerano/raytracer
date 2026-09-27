@@ -4,8 +4,8 @@ Resume point for the next session. Overwritten at the end of every session.
 
 ## State — 2026-09-27
 
-- **M0 (Bootstrap)**: done, PR [#2](https://github.com/Guerano/raytracer/pull/2) awaiting the
-  user's review and merge. Issue #1 criteria all ticked. Board: #1 *In progress*.
+- **M0 (Bootstrap)**: done, PR [#2](https://github.com/Guerano/raytracer/pull/2) ready, CI green,
+  awaiting the user's review and merge. Issue #1 criteria all ticked. Board: #1 *In review*.
 - GitHub: public repo `Guerano/raytracer`, default branch `main`, merge commits only; `main`
   protected (4 required checks: Windows MSVC, Linux gcc, Linux clang, Lint; strict; admins
   included; conversation resolution required). Project board "raytracer" (Todo / In progress /
@@ -22,7 +22,7 @@ settings level because frontmatter hooks do not fire (anthropics/claude-code#956
 
 ## Next actions
 
-1. User: review PR #2, mark ready (or ask the orchestrator), merge.
+1. User: review PR #2 and merge.
 2. After merge: `git -C main pull`; `main/scripts/setup-workspace.ps1` (defaults to `main`);
    `git -C main worktree remove ../M0`; `git -C main branch -d feature/M0`; issue #1 → *Done*.
 3. Cleanup (user, deletions): worktree `dryrun/` + branch `dryrun/M0` (throwaway, never pushed);
